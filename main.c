@@ -37,9 +37,7 @@ void sensor_read(void)
     uint8_t reg;
     uint16_t data = 0;
     puts("Activating sensor.");
-    gpio_init(ACME1_ENABLE_PIN, GPIO_OUT);
     gpio_init(SENSEAIR_ENABLE_PIN, GPIO_OUT);
-    gpio_set(ACME1_ENABLE_PIN);
     gpio_set(SENSEAIR_ENABLE_PIN);
     ztimer_sleep(ZTIMER_MSEC, 20);
     res = i2c_read_regs(SENSEAIR_I2C_DEV, SENSEAIR_I2C_ADDR, SENSEAIR_ERROR_STATUS_REG, &data, 2, 0);
@@ -86,20 +84,6 @@ void sensor_read(void)
 */
 out:
     gpio_clear(SENSEAIR_ENABLE_PIN);
-    gpio_clear(ACME1_ENABLE_PIN);
-}
-
-void poweroff_devices(void)
-{
-    size_t i;
-
-    // turn I2C devices off (leave internal bus I2C_DEV(0) alone)
-    for(i = 1; i < I2C_NUMOF; i++) {
-        i2c_release(I2C_DEV(i));
-        i2c_deinit_pins(I2C_DEV(i));
-        gpio_init(i2c_config[i].scl_pin, GPIO_IN_PU);
-        gpio_init(i2c_config[i].sda_pin, GPIO_IN_PU);
-    }
 }
 
 int main(void)
@@ -121,10 +105,8 @@ int main(void)
             // boot_task
             break;
     }
-
     sensor_read();
     puts("Entering backup mode.");
-    poweroff_devices();
     saml21_backup_mode_enter(RADIO_OFF_REQUESTED, extwake, SLEEP_TIME, 1);
     // never reached
     return 0;

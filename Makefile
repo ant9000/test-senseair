@@ -15,6 +15,7 @@ USEMODULE += saml21_cpu_debug
 USEMODULE += saml21_backup_mode
 USEMODULE += periph_i2c_reconfigure
 USEMODULE += ztimer_msec
+USEMODULE += saul_default
 
 CFLAGS += -DENABLE_ACME1=MODE_I2C
 
