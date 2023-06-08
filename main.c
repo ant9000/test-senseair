@@ -49,7 +49,7 @@ static struct {
 
 void _print_senseair_data(void)
 {
-    printf("Signature: %s; last update: 0x%08lx\n", senseair_data.signature, senseair_data.last_update);
+    printf("Signature: %s; last update: %lu\n", senseair_data.signature, senseair_data.last_update);
     od_hex_dump(&senseair_data.data, sizeof(senseair_data.data), 0);
 }
 
@@ -105,17 +105,20 @@ void sensor_read(void)
             rtc_get_time(&time);
             _print_time(&time);
             tstamp=rtc_mktime(&time);
-            printf("tstamp=0x%08lx\n", tstamp);
+            printf("tstamp=%lu\n", tstamp);
             if (tstamp - senseair_data.last_update > 3600) {
                 printf("ABC time update: 0x%02x%02x -> ", senseair_data.data[4], senseair_data.data[5]);
                 data = (senseair_data.data[4] << 8) + senseair_data.data[5] + (tstamp - senseair_data.last_update) / 3600;
                 senseair_data.data[4] = (data >> 8) & 0xff;
                 senseair_data.data[5] = data & 0xff;
                 printf("0x%02x%02x\n", senseair_data.data[4], senseair_data.data[5]);
+                senseair_data.last_update = tstamp;
             }
             if (i2c_write_regs(SENSEAIR_I2C_DEV, SENSEAIR_I2C_ADDR, SENSEAIR_SAVED_STATE_REG, &senseair_data.data, sizeof(senseair_data.data), 0)) {
                 puts("ERROR: restore failed");
             }
+        } else {
+            puts("No calibration data in FRAM.");
         }
     }
 
@@ -132,11 +135,13 @@ void sensor_read(void)
     printf("Temperature: %4.2f °C\n", (BSWAP(data)/100.));
 
     puts("Saving sensor calibration data to FRAM.");
-    memset(&senseair_data, 0, sizeof(senseair_data));
     strncpy(senseair_data.signature, senseair_signature, sizeof(senseair_data.signature));
-    rtc_get_time(&time);
-    _print_time(&time);
-    senseair_data.last_update=rtc_mktime(&time);
+    if (senseair_data.last_update == 0) {
+        rtc_get_time(&time);
+        _print_time(&time);
+        senseair_data.last_update=rtc_mktime(&time);
+    }
+    memset(senseair_data.data, 0, sizeof(senseair_data.data));
     i2c_read_regs(SENSEAIR_I2C_DEV, SENSEAIR_I2C_ADDR, SENSEAIR_SAVED_STATE_REG, &senseair_data.data, sizeof(senseair_data.data), 0);
     _print_senseair_data();
     if (fram_write(SENSEAIR_STATE_FRAM_ADDR, (uint8_t *)&senseair_data, sizeof(senseair_data))) {
