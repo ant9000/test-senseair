@@ -42,8 +42,10 @@ void sensor_read(void)
     if (fram_read(SENSEAIR_STATE_FRAM_ADDR, &abc_data, sizeof(abc_data))) {
         puts("FRAM read failed.");
     } else {
-        if (senseair_write_abc_data(&dev, &abc_data) != SENSEAIR_OK) {
-            puts("No ABC data copied to sensor.");
+        if (senseair_write_abc_data(&dev, &abc_data) == SENSEAIR_OK) {
+            puts("ABC data restored to sensor.");
+        } else {
+            puts("ABC data not available.");
         }
     }
 
