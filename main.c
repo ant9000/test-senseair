@@ -22,7 +22,7 @@
 
 #define ACME1_ENABLE_PIN     GPIO_PIN(PA, 28)
 
-static senseair_dev_t dev;
+static senseair_t dev;
 static senseair_abc_data_t abc_data;
 
 #define SENSEAIR_STATE_FRAM_ADDR    0
@@ -31,7 +31,8 @@ static saml21_extwake_t extwake = EXTWAKE;
 
 void sensor_read(void)
 {
-    uint16_t conc_ppm, temp_cC;
+    uint16_t conc_ppm;
+    int16_t temp_cC;
 
     if (senseair_init(&dev, &senseair_params[0]) != SENSEAIR_OK) {
         puts("Senseair init failed.");
