@@ -4,12 +4,9 @@
 #include "senseair.h"
 #include "senseair_params.h"
 #include "fram.h"
-#include "saml21_cpu_debug.h"
 #include "saml21_backup_mode.h"
 
-#include "periph_conf.h"
 #include "periph/gpio.h"
-#include "periph/i2c.h"
 #include "periph/rtc.h"
 #include "rtc_utils.h"
 
@@ -19,8 +16,6 @@
     .polarity=EXTWAKE_HIGH, \
     .flags=EXTWAKE_IN_PU }
 #define SLEEP_TIME 5 /* in seconds; -1 to disable */
-
-#define ACME1_ENABLE_PIN     GPIO_PIN(PA, 28)
 
 static senseair_t dev;
 static senseair_abc_data_t abc_data;
@@ -34,8 +29,15 @@ void sensor_read(void)
     uint16_t conc_ppm;
     int16_t temp_cC;
 
+    if (gpio_init(ACMEBUS_ENABLE, GPIO_OUT)) {
+        puts("ACME Bus enable failed.");
+        return;
+    }
+    gpio_set(ACMEBUS_ENABLE);
+
     if (senseair_init(&dev, &senseair_params[0]) != SENSEAIR_OK) {
         puts("Senseair init failed.");
+        gpio_clear(ACMEBUS_ENABLE);
         return;
     }
 
@@ -61,6 +63,8 @@ void sensor_read(void)
             puts("FRAM write failed.");
         }
     }
+
+    gpio_clear(ACMEBUS_ENABLE);
 }
 
 void boot_task(void)
